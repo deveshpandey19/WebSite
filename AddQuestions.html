@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create Question Paper</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f9f9f9; }
+        .container {
+            background: #fff;
+            padding: 28px 18px;
+            border-radius: 10px;
+            max-width: 900px;
+            margin: 32px auto;
+            box-shadow: 0 2px 12px #c0c0c0;
+        }
+        h1 {
+            color: #222;
+            margin-bottom: 24px;
+            text-align: center;
+            font-size: 2rem;
+            letter-spacing: 1px;
+        }
+        .meta-group {
+            display: flex;
+            flex-direction: column;
+            min-width: 140px;
+        }
+        .meta-group label {
+            font-weight: bold;
+            margin-bottom: 4px;
+            font-size: 1rem;
+            text-align: center;
+        }
+        .meta-group input {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #bbb;
+            font-size: 1rem;
+            text-align: center;
+        }
+        .instructions-block {
+            background: #f1f7fd;
+            border-radius: 6px;
+            padding: 14px 14px 8px 14px;
+            margin-bottom: 24px;
+        }
+        .instructions-block label {
+            font-weight: bold;
+            margin-bottom: 6px;
+            display: block;
+        }
+        .instructions-block textarea {
+            width: 100%;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #bbb;
+            font-size: 1rem;
+            resize: vertical;
+        }
+        .section-block {
+            background: #f8fafc;
+            padding: 18px 14px 12px 14px;
+            border-radius: 8px;
+            margin-bottom: 28px;
+            border: 1px solid #e0e0e0;
+        }
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .section-instructions {
+            font-size: 0.98rem;
+            color: #555;
+            margin-bottom: 12px;
+        }
+        .questions {
+            margin-top: 8px;
+        }
+        .question-block {
+            background: #f4f4f4;
+            padding: 14px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            border: 1px solid #e0e0e0;
+        }
+        .question-block .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 8px;
+        }
+        .question-block .form-group {
+            flex: 1 1 160px;
+            min-width: 120px;
+            display: flex;
+            flex-direction: column;
+        }
+        .question-block label {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        .question-block input, .question-block textarea, .question-block select {
+            padding: 7px;
+            border-radius: 4px;
+            border: 1px solid #bbb;
+            font-size: 1rem;
+        }
+        .mcq-options {
+            margin-top: 8px;
+            background: #eaf6ff;
+            border-radius: 5px;
+            padding: 10px;
+        }
+        .actions {
+            margin-top: 24px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            justify-content: flex-end;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            background: #0078d4;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover { background: #005fa3; }
+        .remove-btn { background: #e81123 !important; }
+        .save-btn { background: #28a745 !important; }
+        @media (max-width: 900px) {
+            .container { padding: 10px; }
+            .actions { justify-content: center; }
+            .meta-group { min-width: 100px; }
+        }
+        @media (max-width: 600px) {
+            .meta-group { min-width: 90px; }
+            .section-block { padding: 10px 4px; }
+            .instructions-block { padding: 8px 4px; }
+            .actions { gap: 8px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Question Paper</h1>
+        <form id="questionPaperForm" autocomplete="off">
+            <!-- Row 1: Total Marks (left), Total Time (right) -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; gap: 24px;">
+                <div class="meta-group" style="min-width:140px; align-items: flex-start;">
+                    <label for="totalMarks" style="text-align:left;">Total Marks</label>
+                    <input type="number" id="totalMarks" name="totalMarks" min="1" required style="text-align:left;">
+                </div>
+                <div class="meta-group" style="min-width:140px; align-items: flex-end;">
+                    <label for="totalTime" style="text-align:right;">Total Time (minutes)</label>
+                    <input type="number" id="totalTime" name="totalTime" min="1" required style="text-align:left;">
+                </div>
+            </div>
+            <!-- Row 2: Paper Title, Subject, Grade (centered, full width controls) -->
+            <div style="display: flex; justify-content: center; gap: 32px; margin-bottom: 18px; flex-wrap: wrap;">
+                <div class="meta-group" style="flex:1; min-width:180px; max-width:350px;">
+                    <label for="title" style="text-align:center;">Paper Title</label>
+                    <input type="text" id="title" name="title" required style="text-align:center; width:100%;">
+                </div>
+                <div class="meta-group" style="flex:1; min-width:180px; max-width:350px;">
+                    <label for="subject" style="text-align:center;">Subject</label>
+                    <input type="text" id="subject" name="subject" required style="text-align:center; width:100%;">
+                </div>
+                <div class="meta-group" style="flex:1; min-width:180px; max-width:320px; margin-right:8px;">
+                    <label for="class" style="text-align:center;">Class/Grade</label>
+                    <input type="text" id="class" name="class" required style="text-align:center; width:100%;">
+                </div>
+            </div>
+            <div class="instructions-block">
+                <label for="instructions">Instructions</label>
+                <textarea id="instructions" name="instructions" rows="3" placeholder="Write general instructions here..." required></textarea>
+            </div>
+            <div id="sections"></div>
+            <div class="actions">
+                <button type="button" onclick="addSection()">Add Section</button>
+                <button type="submit">Preview Paper</button>
+                <button type="button" id="savePaperBtn" class="save-btn">Save Question Paper</button>
+            </div>
+        </form>
+        <!-- Preview Layout -->
+        <div id="paperPreview" style="display:none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; gap: 24px;">
+                <div style="min-width:140px; text-align:left;">Total Marks: <span id="previewMarks"></span></div>
+                <div style="min-width:140px; text-align:right;">Total Time: <span id="previewTime"></span> min</div>
+            </div>
+            <div style="display: flex; justify-content: center; gap: 32px; margin-bottom: 18px; flex-wrap: wrap;">
+                <div style="flex:1; min-width:180px; max-width:350px; text-align:center; font-weight:bold;" id="previewTitle"></div>
+                <div style="flex:1; min-width:180px; max-width:350px; text-align:center;" id="previewSubject"></div>
+                <div style="flex:1; min-width:180px; max-width:320px; text-align:center; margin-right:8px;" id="previewClass"></div>
+            </div>
+            <div class="instructions-block">
+                <strong>Instructions:</strong>
+                <div id="previewInstructions" style="margin-top:4px; white-space:pre-line;"></div>
+            </div>
+            <div id="previewSections"></div>
+            <div class="actions" style="justify-content:center;">
+                <button type="button" onclick="editPaper()">Edit Paper</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        let sectionCount = 0;
+        function addSection() {
+            sectionCount++;
+            const sectionsDiv = document.getElementById('sections');
+            const sBlock = document.createElement('div');
+            sBlock.className = 'section-block';
+            sBlock.style.marginBottom = '32px';
+            sBlock.innerHTML = `
+                <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: stretch; margin-bottom: 12px;">
+                    <div class="form-group" style="flex:1; min-width:220px; max-width:320px; display:flex; flex-direction:column; justify-content:stretch;">
+                        <label>Section Title</label>
+                        <input type="text" name="sectionTitle${sectionCount}" required style="width:100%; height:100%; min-height:40px; box-sizing:border-box;">
+                    </div>
+                    <div class="form-group" style="flex:2; min-width:220px; max-width:480px; display:flex; flex-direction:column; justify-content:stretch;">
+                        <label>Section Instructions</label>
+                        <textarea name="sectionInstructions${sectionCount}" rows="2" style="resize:vertical; width:100%; min-height:40px; box-sizing:border-box;"></textarea>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <button type="button" onclick="addQuestion(${sectionCount})">Add Question</button>
+                        <button type="button" onclick="removeSection(this)" class="remove-btn">Remove Section</button>
+                    </div>
+                </div>
+                <div class="questions" id="questions${sectionCount}"></div>
+            `;
+            sectionsDiv.appendChild(sBlock);
+        }
+        function removeSection(btn) {
+            btn.closest('.section-block').remove();
+        }
+        let questionGlobalCount = 0;
+        function addQuestion(sectionId) {
+            questionGlobalCount++;
+            const questionsDiv = document.getElementById('questions' + sectionId);
+            const qBlock = document.createElement('div');
+            qBlock.className = 'question-block';
+            qBlock.innerHTML = `
+                <div class="form-row">
+                    <div class="form-group" style="flex:2;">
+                        <label>Question</label>
+                        <textarea name="question${sectionId}_${questionGlobalCount}" rows="2" required></textarea>
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>Type</label>
+                        <select name="type${sectionId}_${questionGlobalCount}">
+                            <option value="short">Short Answer</option>
+                            <option value="long">Long Answer</option>
+                            <option value="mcq">Multiple Choice</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>Marks</label>
+                        <input type="number" name="marks${sectionId}_${questionGlobalCount}" min="1" required>
+                    </div>
+                </div>
+                <div class="mcq-options" style="display:none;">
+                    <div class="form-row">
+                        <div class="form-group"><label>Option A</label><input type="text" name="optionA${sectionId}_${questionGlobalCount}"></div>
+                        <div class="form-group"><label>Option B</label><input type="text" name="optionB${sectionId}_${questionGlobalCount}"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Option C</label><input type="text" name="optionC${sectionId}_${questionGlobalCount}"></div>
+                        <div class="form-group"><label>Option D</label><input type="text" name="optionD${sectionId}_${questionGlobalCount}"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group" style="flex:1;">
+                            <label>Correct Option</label>
+                            <select name="correct${sectionId}_${questionGlobalCount}">
+                                <option value="A">A</option>
+                                <option value="B">B</option>
+                                <option value="C">C</option>
+                                <option value="D">D</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="actions">
+                    <button type="button" onclick="removeQuestion(this)" class="remove-btn">Remove</button>
+                </div>
+            `;
+            questionsDiv.appendChild(qBlock);
+            const typeSelect = qBlock.querySelector(`select[name="type${sectionId}_${questionGlobalCount}"]`);
+            const mcqOptions = qBlock.querySelector('.mcq-options');
+            typeSelect.addEventListener('change', function() {
+                mcqOptions.style.display = this.value === 'mcq' ? 'block' : 'none';
+            });
+        }
+        function removeQuestion(btn) {
+            btn.closest('.question-block').remove();
+        }
+        document.getElementById('questionPaperForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            showPreview();
+        });
+        function showPreview() {
+            document.getElementById('questionPaperForm').style.display = 'none';
+            document.getElementById('paperPreview').style.display = 'block';
+            document.getElementById('previewTitle').textContent = document.getElementById('title').value;
+            document.getElementById('previewSubject').textContent = "Subject: " + document.getElementById('subject').value;
+            document.getElementById('previewClass').textContent = "Class: " + document.getElementById('class').value;
+            document.getElementById('previewMarks').textContent = document.getElementById('totalMarks').value;
+            document.getElementById('previewTime').textContent = document.getElementById('totalTime').value;
+            document.getElementById('previewInstructions').textContent = document.getElementById('instructions').value;
+            const previewSections = document.getElementById('previewSections');
+            previewSections.innerHTML = '';
+            const sectionBlocks = document.querySelectorAll('.section-block');
+            sectionBlocks.forEach((section) => {
+                const sectionTitle = section.querySelector('input[name^="sectionTitle"]').value;
+                const sectionInstructions = section.querySelector('textarea[name^="sectionInstructions"]').value;
+                const questions = section.querySelectorAll('.question-block');
+                let sectionHtml = `<div class="section-block"><div class="section-title">${sectionTitle}</div>`;
+                if(sectionInstructions.trim()) {
+                    sectionHtml += `<div class="section-instructions">${sectionInstructions}</div>`;
+                }
+                sectionHtml += `<ol style="padding-left:18px;">`;
+                questions.forEach((q, qIdx) => {
+                    const qText = q.querySelector(`textarea[name^="question"]`).value;
+                    const qType = q.querySelector(`select[name^="type"]`).value;
+                    const qMarks = q.querySelector(`input[name^="marks"]`).value;
+                    let typeLabel = '';
+                    if(qType === 'short') typeLabel = 'Short Answer';
+                    else if(qType === 'long') typeLabel = 'Long Answer';
+                    else if(qType === 'mcq') typeLabel = 'Multiple Choice';
+                    sectionHtml += `<li style="margin-bottom:12px;">
+                        <div><strong>Q${qIdx+1}.</strong> ${qText} <span style="float:right;">[${qMarks} marks, <em>${typeLabel}</em>]</span></div>`;
+                    if(qType === 'mcq') {
+                        sectionHtml += `<ul style="list-style-type:upper-alpha; margin-top:4px; margin-bottom:4px;">`;
+                        ['A','B','C','D'].forEach(opt => {
+                            const optVal = q.querySelector(`input[name^="option${opt}"]`).value;
+                            if(optVal) sectionHtml += `<li>${optVal}</li>`;
+                        });
+                        sectionHtml += `</ul>`;
+                        const correct = q.querySelector(`select[name^="correct"]`).value;
+                        sectionHtml += `<div style="font-size:90%;color:#0078d4;">Correct Option: ${correct}</div>`;
+                    }
+                    sectionHtml += `</li>`;
+                });
+                sectionHtml += `</ol></div>`;
+                previewSections.innerHTML += sectionHtml;
+            });
+        }
+        function editPaper() {
+            document.getElementById('paperPreview').style.display = 'none';
+            document.getElementById('questionPaperForm').style.display = 'block';
+        }
+        document.getElementById('savePaperBtn').addEventListener('click', function() {
+            const form = document.getElementById('questionPaperForm');
+            const formData = new FormData(form);
+            const paperData = {
+                title: formData.get('title'),
+                subject: formData.get('subject'),
+                class: formData.get('class'),
+                totalTime: formData.get('totalTime'),
+                totalMarks: formData.get('totalMarks'),
+                instructions: formData.get('instructions'),
+                sections: []
+            };
+            document.querySelectorAll('.section-block').forEach(section => {
+                const sectionTitle = section.querySelector('input[name^="sectionTitle"]').value;
+                const sectionInstructions = section.querySelector('textarea[name^="sectionInstructions"]').value;
+                const questions = [];
+                section.querySelectorAll('.question-block').forEach(q => {
+                    const qType = q.querySelector('select[name^="type"]').value;
+                    const questionObj = {
+                        question: q.querySelector('textarea[name^="question"]').value,
+                        type: qType,
+                        marks: q.querySelector('input[name^="marks"]').value
+                    };
+                    if(qType === 'mcq') {
+                        questionObj.options = [
+                            q.querySelector('input[name^="optionA"]').value,
+                            q.querySelector('input[name^="optionB"]').value,
+                            q.querySelector('input[name^="optionC"]').value,
+                            q.querySelector('input[name^="optionD"]').value
+                        ];
+                        questionObj.correct = q.querySelector('select[name^="correct"]').value;
+                    }
+                    questions.push(questionObj);
+                });
+                paperData.sections.push({
+                    title: sectionTitle,
+                    instructions: sectionInstructions,
+                    questions: questions
+                });
+            });
+            fetch('/api/save-paper', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(paperData)
+            })
+            .then(res => res.ok ? alert('Question paper saved!') : alert('Failed to save.'))
+            .catch(() => alert('Error saving question paper.'));
+        });
+    </script>
+</body>
+</html>
