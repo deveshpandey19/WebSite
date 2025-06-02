@@ -217,21 +217,23 @@
             sBlock.className = 'section-block';
             sBlock.style.marginBottom = '32px';
             sBlock.innerHTML = `
-                <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: stretch; margin-bottom: 12px;">
-                    <div class="form-group" style="flex:1; min-width:220px; max-width:320px; display:flex; flex-direction:column; justify-content:stretch;">
+                <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-end; margin-bottom: 12px;">
+                    <div class="form-group" style="flex:1; min-width:220px; max-width:320px; display:flex; flex-direction:column;">
                         <label>Section Title</label>
-                        <input type="text" name="sectionTitle${sectionCount}" required style="width:100%; height:100%; min-height:40px; box-sizing:border-box;">
+                        <input type="text" name="sectionTitle${sectionCount}" required style="width:100%; min-height:40px; box-sizing:border-box;">
                     </div>
-                    <div class="form-group" style="flex:2; min-width:220px; max-width:480px; display:flex; flex-direction:column; justify-content:stretch;">
+                    <div class="form-group" style="flex:2; min-width:220px; max-width:480px; display:flex; flex-direction:column;">
                         <label>Section Instructions</label>
                         <textarea name="sectionInstructions${sectionCount}" rows="2" style="resize:vertical; width:100%; min-height:40px; box-sizing:border-box;"></textarea>
                     </div>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <button type="button" onclick="addQuestion(${sectionCount})">Add Question</button>
-                        <button type="button" onclick="removeSection(this)" class="remove-btn">Remove Section</button>
+                    <div style="display:flex; flex-direction:column; justify-content:flex-end; align-items:flex-end; min-width:140px;">
+                        <button type="button" onclick="removeSection(this)" class="remove-btn" style="margin-bottom:2px;">Remove Section</button>
                     </div>
                 </div>
                 <div class="questions" id="questions${sectionCount}"></div>
+                <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                    <button type="button" onclick="addQuestion(${sectionCount})">Add Question</button>
+                </div>
             `;
             sectionsDiv.appendChild(sBlock);
         }
@@ -248,7 +250,7 @@
                 <div class="form-row">
                     <div class="form-group" style="flex:2;">
                         <label>Question</label>
-                        <textarea name="question${sectionId}_${questionGlobalCount}" rows="2" required></textarea>
+                        <textarea name="question${sectionId}_${questionGlobalCount}" rows="2" required readonly style="background:#f3f3f3;"></textarea>
                     </div>
                     <div class="form-group" style="flex:1;">
                         <label>Type</label>
@@ -262,6 +264,11 @@
                         <label>Marks</label>
                         <input type="number" name="marks${sectionId}_${questionGlobalCount}" min="1" required>
                     </div>
+                </div>
+                <div class="form-row" style="gap:10px; margin-bottom:8px;">
+                    <button type="button" onclick="fetchQuestionFromDB(this, ${sectionId}, ${questionGlobalCount})">Fetch from Database</button>
+                    <button type="button" onclick="generateAIQuestion(this, ${sectionId}, ${questionGlobalCount})">AI Generated</button>
+                    <button type="button" onclick="clearQuestionText(this)">Create Your Own</button>
                 </div>
                 <div class="mcq-options" style="display:none;">
                     <div class="form-row">
@@ -401,6 +408,49 @@
             .then(res => res.ok ? alert('Question paper saved!') : alert('Failed to save.'))
             .catch(() => alert('Error saving question paper.'));
         });
+        function fetchQuestionFromDB(btn, sectionId, questionId) {
+    const textarea = btn.closest('.question-block').querySelector(`textarea[name="question${sectionId}_${questionId}"]`);
+    textarea.readOnly = true;
+    textarea.style.background = "#f3f3f3";
+    const choice = prompt("Type 'random' to fetch a random question or enter keywords to search in the database:");
+    if (!choice) return;
+    if (choice.trim().toLowerCase() === 'random') {
+        fetch('/api/get-question?mode=random')
+            .then(res => res.json())
+            .then (data => {
+                textarea.value = data.question || 'Sample random question from database';
+            })
+            .catch(() => alert('Failed to fetch random question.'));
+    } else {
+        fetch('/api/get-question?mode=search&query=' + encodeURIComponent(choice))
+            .then(res => res.json())
+            .then(data => {
+                textarea.value = data.question || 'No question found for your search.';
+            })
+            .catch(() => alert('Failed to search question.'));
+    }
+}
+
+function generateAIQuestion(btn, sectionId, questionId) {
+    const textarea = btn.closest('.question-block').querySelector(`textarea[name="question${sectionId}_${questionId}"]`);
+    textarea.readOnly = true;
+    textarea.style.background = "#f3f3f3";
+    const keywords = prompt("Enter keywords or topic for AI to generate a question:");
+    if (!keywords) return;
+    fetch('/api/ai-generate-question?keywords=' + encodeURIComponent(keywords))
+        .then(res => res.json())
+        .then(data => {
+            textarea.value = data.question || 'Sample AI generated question';
+        })
+        .catch(() => alert('Failed to generate AI question.'));
+}
+
+function clearQuestionText(btn) {
+    const textarea = btn.closest('.question-block').querySelector('textarea');
+    textarea.value = '';
+    textarea.readOnly = false;
+    textarea.style.background = "#fff";
+}
     </script>
 </body>
 </html>
