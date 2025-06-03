@@ -247,6 +247,11 @@
             const qBlock = document.createElement('div');
             qBlock.className = 'question-block';
             qBlock.innerHTML = `
+                <div class="form-row" style="align-items:center; gap:16px; margin-bottom:18px; padding-bottom:8px; border-bottom:1px dashed #c0c0c0;">
+                    <label style="font-weight:normal; min-width:160px;">Attach Image/Video (optional):</label>
+                    <input type="file" accept="image/*,video/*" name="media${sectionId}_${questionGlobalCount}" onchange="handleMediaUpload(this)" style="flex:1;">
+                    <div class="media-preview" style="margin-top:0; margin-left:12px;"></div>
+                </div>
                 <div class="form-row">
                     <div class="form-group" style="flex:2;">
                         <label>Question</label>
@@ -291,7 +296,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="actions">
+                <div class="actions" style="justify-content: flex-end; margin-top: 10px;">
                     <button type="button" onclick="removeQuestion(this)" class="remove-btn">Remove</button>
                 </div>
             `;
@@ -305,9 +310,97 @@
         function removeQuestion(btn) {
             btn.closest('.question-block').remove();
         }
+        function validatePaperForm() {
+    const form = document.getElementById('questionPaperForm');
+    let valid = true;
+    let messages = [];
+
+    // Validate main fields
+    if (!form.title.value.trim()) {
+        valid = false;
+        messages.push("Paper Title is required.");
+    }
+    if (!form.subject.value.trim()) {
+        valid = false;
+        messages.push("Subject is required.");
+    }
+    if (!form.class.value.trim()) {
+        valid = false;
+        messages.push("Class/Grade is required.");
+    }
+    if (!form.totalMarks.value.trim()) {
+        valid = false;
+        messages.push("Total Marks is required.");
+    }
+    if (!form.totalTime.value.trim()) {
+        valid = false;
+        messages.push("Total Time is required.");
+    }
+    if (!form.instructions.value.trim()) {
+        valid = false;
+        messages.push("Instructions are required.");
+    }
+
+    // Validate sections and questions
+    const sectionBlocks = document.querySelectorAll('.section-block');
+    if (sectionBlocks.length === 0) {
+        valid = false;
+        messages.push("At least one section is required.");
+    }
+    sectionBlocks.forEach((section, sIdx) => {
+        const sectionTitle = section.querySelector('input[name^="sectionTitle"]');
+        if (!sectionTitle || !sectionTitle.value.trim()) {
+            valid = false;
+            messages.push(`Section ${sIdx + 1}: Title is required.`);
+        }
+        const questions = section.querySelectorAll('.question-block');
+        if (questions.length === 0) {
+            valid = false;
+            messages.push(`Section ${sIdx + 1}: At least one question is required.`);
+        }
+        questions.forEach((q, qIdx) => {
+            const qText = q.querySelector('textarea[name^="question"]');
+            if (!qText || !qText.value.trim()) {
+                valid = false;
+                messages.push(`Section ${sIdx + 1}, Question ${qIdx + 1}: Question text is required.`);
+            }
+            const qType = q.querySelector('select[name^="type"]');
+            if (!qType || !qType.value.trim()) {
+                valid = false;
+                messages.push(`Section ${sIdx + 1}, Question ${qIdx + 1}: Question type is required.`);
+            }
+            const qMarks = q.querySelector('input[name^="marks"]');
+            if (!qMarks || !qMarks.value.trim()) {
+                valid = false;
+                messages.push(`Section ${sIdx + 1}, Question ${qIdx + 1}: Marks are required.`);
+            }
+            if (qType && qType.value === 'mcq') {
+                ['A', 'B', 'C', 'D'].forEach(opt => {
+                    const optInput = q.querySelector(`input[name^="option${opt}"]`);
+                    if (!optInput || !optInput.value.trim()) {
+                        valid = false;
+                        messages.push(`Section ${sIdx + 1}, Question ${qIdx + 1}: Option ${opt} is required for MCQ.`);
+                    }
+                });
+                const correct = q.querySelector('select[name^="correct"]');
+                if (!correct || !correct.value.trim()) {
+                    valid = false;
+                    messages.push(`Section ${sIdx + 1}, Question ${qIdx + 1}: Correct option is required for MCQ.`);
+                }
+            }
+        });
+    });
+
+    if (!valid) {
+        alert(messages.join('\n'));
+    }
+    return valid;
+}
         document.getElementById('questionPaperForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            showPreview();
+            if (validatePaperForm()) {
+                showPreview();
+            }
         });
         function showPreview() {
             document.getElementById('questionPaperForm').style.display = 'none';
@@ -338,8 +431,24 @@
                     if(qType === 'short') typeLabel = 'Short Answer';
                     else if(qType === 'long') typeLabel = 'Long Answer';
                     else if(qType === 'mcq') typeLabel = 'Multiple Choice';
+
+                    // --- Media preview logic ---
+                    let mediaHtml = '';
+                    const mediaInput = q.querySelector('input[type="file"][name^="media"]');
+                    if (mediaInput && mediaInput.files && mediaInput.files[0]) {
+                        const file = mediaInput.files[0];
+                        const url = URL.createObjectURL(file);
+                        if (file.type.startsWith('image/')) {
+                            mediaHtml = `<div style="margin:8px 0;"><img src="${url}" alt="Image" style="max-width:160px; max-height:120px; border-radius:6px; border:1px solid #ccc;"></div>`;
+                        } else if (file.type.startsWith('video/')) {
+                            mediaHtml = `<div style="margin:8px 0;"><video src="${url}" controls style="max-width:160px; max-height:120px; border-radius:6px; border:1px solid #ccc;"></video></div>`;
+                        }
+                    }
+                    // --- End media preview logic ---
+
                     sectionHtml += `<li style="margin-bottom:12px;">
-                        <div><strong>Q${qIdx+1}.</strong> ${qText} <span style="float:right;">[${qMarks} marks, <em>${typeLabel}</em>]</span></div>`;
+                        <div><strong>Q${qIdx+1}.</strong> ${qText} <span style="float:right;">[${qMarks} marks, <em>${typeLabel}</em>]</span></div>
+                        ${mediaHtml}`;
                     if(qType === 'mcq') {
                         sectionHtml += `<ul style="list-style-type:upper-alpha; margin-top:4px; margin-bottom:4px;">`;
                         ['A','B','C','D'].forEach(opt => {
@@ -361,53 +470,73 @@
             document.getElementById('questionPaperForm').style.display = 'block';
         }
         document.getElementById('savePaperBtn').addEventListener('click', function() {
-            const form = document.getElementById('questionPaperForm');
-            const formData = new FormData(form);
-            const paperData = {
-                title: formData.get('title'),
-                subject: formData.get('subject'),
-                class: formData.get('class'),
-                totalTime: formData.get('totalTime'),
-                totalMarks: formData.get('totalMarks'),
-                instructions: formData.get('instructions'),
-                sections: []
+    if (!validatePaperForm()) return;
+    const form = document.getElementById('questionPaperForm');
+    const formData = new FormData();
+    formData.append('title', form.title.value);
+    formData.append('subject', form.subject.value);
+    formData.append('class', form.class.value);
+    formData.append('totalTime', form.totalTime.value);
+    formData.append('totalMarks', form.totalMarks.value);
+    formData.append('instructions', form.instructions.value);
+
+    // Collect sections and questions as JSON, and append media files
+    const sectionsArr = [];
+    document.querySelectorAll('.section-block').forEach((section, sIdx) => {
+        const sectionTitleInput = section.querySelector('input[name^="sectionTitle"]');
+        const sectionInstructionsInput = section.querySelector('textarea[name^="sectionInstructions"]');
+        const sectionTitle = sectionTitleInput ? sectionTitleInput.value : "";
+        const sectionInstructions = sectionInstructionsInput ? sectionInstructionsInput.value : "";
+        const questionsArr = [];
+        section.querySelectorAll('.question-block').forEach((q, qIdx) => {
+            const qType = q.querySelector('select[name^="type"]').value;
+            const questionObj = {
+                question: q.querySelector('textarea[name^="question"]').value,
+                type: qType,
+                marks: q.querySelector('input[name^="marks"]').value
             };
-            document.querySelectorAll('.section-block').forEach(section => {
-                const sectionTitle = section.querySelector('input[name^="sectionTitle"]').value;
-                const sectionInstructions = section.querySelector('textarea[name^="sectionInstructions"]').value;
-                const questions = [];
-                section.querySelectorAll('.question-block').forEach(q => {
-                    const qType = q.querySelector('select[name^="type"]').value;
-                    const questionObj = {
-                        question: q.querySelector('textarea[name^="question"]').value,
-                        type: qType,
-                        marks: q.querySelector('input[name^="marks"]').value
-                    };
-                    if(qType === 'mcq') {
-                        questionObj.options = [
-                            q.querySelector('input[name^="optionA"]').value,
-                            q.querySelector('input[name^="optionB"]').value,
-                            q.querySelector('input[name^="optionC"]').value,
-                            q.querySelector('input[name^="optionD"]').value
-                        ];
-                        questionObj.correct = q.querySelector('select[name^="correct"]').value;
-                    }
-                    questions.push(questionObj);
-                });
-                paperData.sections.push({
-                    title: sectionTitle,
-                    instructions: sectionInstructions,
-                    questions: questions
-                });
-            });
-            fetch('/api/save-paper', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(paperData)
-            })
-            .then(res => res.ok ? alert('Question paper saved!') : alert('Failed to save.'))
-            .catch(() => alert('Error saving question paper.'));
+            // MCQ options
+            if(qType === 'mcq') {
+                questionObj.options = [
+                    q.querySelector('input[name^="optionA"]') ? q.querySelector('input[name^="optionA"]').value : "",
+                    q.querySelector('input[name^="optionB"]') ? q.querySelector('input[name^="optionB"]').value : "",
+                    q.querySelector('input[name^="optionC"]') ? q.querySelector('input[name^="optionC"]').value : "",
+                    q.querySelector('input[name^="optionD"]') ? q.querySelector('input[name^="optionD"]').value : ""
+                ];
+                questionObj.correct = q.querySelector('select[name^="correct"]') ? q.querySelector('select[name^="correct"]').value : "";
+            }
+            // Media file
+            const mediaInput = q.querySelector('input[type="file"][name^="media"]');
+            if (mediaInput && mediaInput.files && mediaInput.files[0]) {
+                // Give each file a unique key, e.g. media_s0q0
+                const mediaKey = `media_s${sIdx}q${qIdx}`;
+                formData.append(mediaKey, mediaInput.files[0]);
+                questionObj.mediaKey = mediaKey;
+                questionObj.mediaName = mediaInput.files[0].name;
+                questionObj.mediaType = mediaInput.files[0].type;
+            }
+            questionsArr.push(questionObj);
         });
+        // Only add section if it has at least one question
+        if (questionsArr.length > 0) {
+            sectionsArr.push({
+                title: sectionTitle,
+                instructions: sectionInstructions,
+                questions: questionsArr
+            });
+        }
+    });
+    // Print JSON to console before sending
+    console.log(JSON.stringify(sectionsArr, null, 2));
+    formData.append('sections', JSON.stringify(sectionsArr));
+
+    fetch('/api/save-paper', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.ok ? alert('Question paper saved!') : alert('Failed to save.'))
+    .catch(() => alert('Error saving question paper.'));
+});
         function fetchQuestionFromDB(btn, sectionId, questionId) {
     const textarea = btn.closest('.question-block').querySelector(`textarea[name="question${sectionId}_${questionId}"]`);
     textarea.readOnly = true;
@@ -450,6 +579,20 @@ function clearQuestionText(btn) {
     textarea.value = '';
     textarea.readOnly = false;
     textarea.style.background = "#fff";
+}
+
+function handleMediaUpload(input) {
+    const previewDiv = input.parentElement.querySelector('.media-preview');
+    previewDiv.innerHTML = '';
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        const url = URL.createObjectURL(file);
+        if (file.type.startsWith('image/')) {
+            previewDiv.innerHTML = `<img src="${url}" alt="Image Preview" style="max-width:120px; max-height:80px; display:block;">`;
+        } else if (file.type.startsWith('video/')) {
+            previewDiv.innerHTML = `<video src="${url}" controls style="max-width:120px; max-height:80px; display:block;"></video>`;
+        }
+    }
 }
     </script>
 </body>
