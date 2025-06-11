@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Three.js OBJLoader Example</title>
+    <style>
+        body { margin: 0; background: #222; }
+        #main-wrapper {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+        #left-panel {
+            width: 40vw;
+            min-width: 320px;
+            background: #181818;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-right: 2px solid #333;
+            height: 100vh;
+        }
+        #right-panel {
+            flex: 1;
+            position: relative;
+            background: #222;
+            height: 100vh;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+        }
+        #referenceImage {
+            max-width: 90%;
+            max-height: 90%;
+            border: 2px solid #444;
+            border-radius: 8px;
+            background: #111;
+            object-fit: contain;
+        }
+        #submitRotationBtn {
+            position: absolute;
+            left: 50%;
+            bottom: 30px;
+            transform: translateX(-50%);
+            z-index: 10;
+            padding: 10px 18px;
+            font-size: 16px;
+        }
+        #screenshotBtn {
+            position: absolute;
+            left: 50%;
+            bottom: 80px;
+            transform: translateX(-50%);
+            z-index: 10;
+            padding: 10px 18px;
+            font-size: 16px;
+        }
+        #container {
+            width: 100%;
+            height: 100%;
+            display: block;
+            flex: 1 1 auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="main-wrapper">
+        <div id="left-panel">
+            <!-- Reference image will be loaded here -->
+            <img id="referenceImage" src="" alt="Reference Image" style="display:none;">
+        </div>
+        <div id="right-panel">
+            <div id="container"></div>
+            <button id="submitRotationBtn">Submit Rotation</button>
+            <button id="screenshotBtn">Take Screenshot</button>
+        </div>
+    </div>
+    <!-- Three.js and addons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/loaders/OBJLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/loaders/MTLLoader.js"></script>
+    <script>
+        // Three.js scene setup
+        const container = document.getElementById('container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x222222);
+
+        const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+        camera.position.set(0, 1, 20);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        container.appendChild(renderer.domElement);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
+        dirLight.position.set(5, 10, 7.5);
+        scene.add(dirLight);
+
+        // OrbitControls
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.enableRotate = false; // Disable camera rotation
+        controls.enablePan = false; // Disable panning
+        controls.enableZoom = false; // Enable zooming
+        controls.minDistance = 5; // Minimum zoom distance
+        controls.maxDistance = 50; // Maximum zoom distance
+
+
+        // Load .obj file (update the path as needed)
+        let loadedObject = null;
+        
+        /*// Suppose you have the OBJ file content as a string:
+        const objText = `
+        # Simple cone OBJ file
+# Base radius = 1, height = 1, 12 segments
+
+# Vertices
+v 0.000000 0.000000 0.000000  # Center of the base
+v 1.000000 0.000000 0.000000  # Base vertex 1
+v 0.866025 0.500000 0.000000  # Base vertex 2
+v 0.500000 0.866025 0.000000  # Base vertex 3
+v 0.000000 1.000000 0.000000  # Base vertex 4
+v -0.500000 0.866025 0.000000 # Base vertex 5
+v -0.866025 0.500000 0.000000 # Base vertex 6
+v -1.000000 0.000000 0.000000 # Base vertex 7
+v -0.866025 -0.500000 0.000000 # Base vertex 8
+v -0.500000 -0.866025 0.000000 # Base vertex 9
+v 0.000000 -1.000000 0.000000 # Base vertex 10
+v 0.500000 -0.866025 0.000000 # Base vertex 11
+v 0.866025 -0.500000 0.000000 # Base vertex 12
+v 0.000000 0.000000 1.000000  # Apex
+
+# Vertex normals (approximate for smooth shading)
+vn 0.000000 0.000000 -1.000000 # Normal for base
+vn 0.894427 0.000000 0.447214  # Normal for side (approx)
+vn 0.774597 0.447214 0.447214
+vn 0.447214 0.774597 0.447214
+vn 0.000000 0.894427 0.447214
+vn -0.447214 0.774597 0.447214
+vn -0.774597 0.447214 0.447214
+vn -0.894427 0.000000 0.447214
+vn -0.774597 -0.447214 0.447214
+vn -0.447214 -0.866025 0.447214
+vn 0.000000 -0.894427 0.447214
+vn 0.447214 -0.774597 0.447214
+vn 0.774597 -0.447214 0.447214
+
+# Faces
+# Base face (all base vertices point downward)
+f 1//1 2//1 3//1
+f 1//1 3//1 4//1
+f 1//1 4//1 5//1
+f 1//1 5//1 6//1
+f 1//1 6//1 7//1
+f 1//1 7//1 8//1
+f 1//1 8//1 9//1
+f 1//1 9//1 10//1
+f 1//1 10//1 11//1
+f 1//1 11//1 12//1
+f 1//1 12//1 13//1
+f 1//1 13//1 2//1
+# Side faces (connect base vertices to apex)
+f 2//2 14//2 3//3
+f 3//3 14//3 4//4
+f 4//4 14//4 5//5
+f 5//5 14//5 6//6
+f 6//6 14//6 7//7
+f 7//7 14//7 8//8
+f 8//8 14//8 9//9
+f 9//9 14//9 10//10
+f 10//10 14//10 11//11
+f 11//11 14//11 12//12
+f 12//12 14//12 13//13
+f 13//13 14//13 2//2
+        `;
+
+        const objText_chair = `
+        # Simple Chair OBJ File
+# Created for illustrative purposes
+# Simple Bottle OBJ File
+# Basic representation of a cylindrical bottle with body and neck
+
+# Vertices (v x y z)
+v 0.5 0.0 0.0  # Body bottom center
+v 0.8 0.0 0.2  # Body bottom outer point 1
+v 0.8 0.0 -0.2 # Body bottom outer point 2
+v 0.5 0.0 -0.4 # Body bottom outer point 3
+v 0.2 0.0 -0.2 # Body bottom outer point 4
+v 0.2 0.0 0.2  # Body bottom outer point 5
+v 0.8 1.0 0.2  # Body top outer point 1
+v 0.8 1.0 -0.2 # Body top outer point 2
+v 0.5 1.0 -0.4 # Body top outer point 3
+v 0.2 1.0 -0.2 # Body top outer point 4
+v 0.2 1.0 0.2  # Body top outer point 5
+v 0.5 1.0 0.0  # Body top center
+v 0.6 1.0 0.1  # Neck bottom outer point 1
+v 0.6 1.0 -0.1 # Neck bottom outer point 2
+v 0.5 1.0 -0.2 # Neck bottom outer point 3
+v 0.4 1.0 -0.1 # Neck bottom outer point 4
+v 0.4 1.0 0.1  # Neck bottom outer point 5
+v 0.6 1.5 0.1  # Neck top outer point 1
+v 0.6 1.5 -0.1 # Neck top outer point 2
+v 0.5 1.5 -0.2 # Neck top outer point 3
+v 0.4 1.5 -0.1 # Neck top outer point 4
+v 0.4 1.5 0.1  # Neck top outer point 5
+v 0.5 1.5 0.0  # Neck top center
+
+# Vertex Normals (vn x y z)
+vn 0.0 -1.0 0.0 # Normal pointing down for bottom
+vn 0.0 1.0 0.0  # Normal pointing up for top
+vn 0.5 0.0 0.5  # Normal for body side 1
+vn 0.5 0.0 -0.5 # Normal for body side 2
+vn -0.5 0.0 -0.5 # Normal for body side 3
+vn -0.5 0.0 0.5 # Normal for body side 4
+vn 0.5 0.0 0.5  # Normal for neck side 1
+vn 0.5 0.0 -0.5 # Normal for neck side 2
+vn -0.5 0.0 -0.5 # Normal for neck side 3
+vn -0.5 0.0 0.5 # Normal for neck side 4
+
+# Faces (f v1//vn1 v2//vn2 v3//vn3 ...)
+# Body bottom
+f 1//1 2//1 3//1
+f 1//1 3//1 4//1
+f 1//1 4//1 5//1
+f 1//1 5//1 6//1
+# Body top
+f 12//2 7//2 8//2
+f 12//2 8//2 9//2
+f 12//2 9//2 10//2
+f 12//2 10//2 11//2
+# Body sides
+f 2//3 7//3 8//3
+f 2//3 8//3 3//3
+f 3//4 8//4 9//4
+f 3//4 9//4 4//4
+f 4//5 9//5 10//5
+f 4//5 10//5 5//5
+f 5//6 10//6 11//6
+f 5//6 11//6 6//6
+f 6//3 11//3 7//3
+f 6//3 7//3 2//3
+# Neck bottom
+f 12//2 13//2 14//2
+f 12//2 14//2 15//2
+f 12//2 15//2 16//2
+f 12//2 16//2 17//2
+# Neck top
+f 23//2 18//2 19//2
+f 23//2 19//2 20//2
+f 23//2 20//2 21//2
+f 23//2 21//2 22//2
+# Neck sides
+f 13//7 18//7 19//7
+f 13//7 19//7 14//7
+f 14//8 19//8 20//8
+f 14//8 20//8 15//8
+f 15//9 20//9 21//9
+f 15//9 21//9 16//9
+f 16//10 21//10 22//10
+f 16//10 22//10 17//10
+f 17//7 22//7 18//7
+f 17//7 18//7 13//7
+        `;
+
+        // Parse the OBJ text
+        const objLoader = new THREE.OBJLoader();
+        const object = objLoader.parse(objText_chair);
+
+        // Traverse the object to find all meshes
+        object.traverse((child) => {
+            if (child.isMesh) {
+                // Generate a random color
+                const randomColor = Math.random() * 0xffffff; // Random value between 0 and 0xffffff (hex for white)
+                
+                // Create a new material with the random color
+                child.material = new THREE.MeshBasicMaterial({
+                    color: randomColor
+                });
+            }
+        });
+        // Add to scene
+        scene.add(object);
+        loadedObject = object;
+*/
+        
+        const mtlLoader = new THREE.MTLLoader();
+        mtlLoader.load('obj/Only_Spider_with_Animations_Export.mtl', function(materials) {
+            materials.preload();
+            const objLoader = new THREE.OBJLoader();
+            objLoader.setMaterials(materials);
+            objLoader.load(
+                'obj/Only_Spider_with_Animations_Export.obj',
+                function(object) {
+                    object.position.set(0, 0, 0);
+                    object.scale.set(.1, .1, .1);
+                    scene.add(object);
+                    loadedObject = object;
+                },
+                undefined,
+                function(error) {
+                    alert('An error occurred loading the .obj file.');
+                    console.error(error);
+                }
+            );
+        });
+        
+        // Mouse drag rotation
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+
+        renderer.domElement.addEventListener('mousedown', function(e) {
+                isDragging = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+        });
+
+        renderer.domElement.addEventListener('mouseup', function(e) {
+                isDragging = false;
+        });
+
+        renderer.domElement.addEventListener('mousemove', function(e) {
+            if (isDragging && loadedObject) {
+                const deltaMove = {
+                    x: e.clientX - previousMousePosition.x,
+                    y: e.clientY - previousMousePosition.y
+                };
+
+                // Calculate rotation axis in world space
+                const rotationSpeed = 0.01;
+                const axis = new THREE.Vector3(deltaMove.y, deltaMove.x, 0).normalize();
+                const angle = Math.sqrt(deltaMove.x * deltaMove.x + deltaMove.y * deltaMove.y) * rotationSpeed;
+
+                // Create a quaternion for the rotation
+                const quaternion = new THREE.Quaternion();
+                quaternion.setFromAxisAngle(axis, angle);
+
+                // Apply rotation in world space
+                loadedObject.applyQuaternion(quaternion);
+
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            }
+        });
+
+
+        // Responsive resize
+        window.addEventListener('resize', () => {
+            // Use right-panel's size for renderer and camera aspect
+            const rightPanel = document.getElementById('right-panel');
+            const w = rightPanel.clientWidth;
+            const h = rightPanel.clientHeight;
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h);
+        });
+
+        // Initial renderer size (after DOM is ready)
+        const rightPanel = document.getElementById('right-panel');
+        renderer.setSize(rightPanel.clientWidth, rightPanel.clientHeight);
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+
+            // Log rotation of the loaded object
+            if (loadedObject) {
+                // Clamp rotation between 0 and 2*PI
+                loadedObject.rotation.x = (loadedObject.rotation.x + Math.PI * 2) % (Math.PI * 2);
+                loadedObject.rotation.y = (loadedObject.rotation.y + Math.PI * 2) % (Math.PI * 2);
+                loadedObject.rotation.z = (loadedObject.rotation.z + Math.PI * 2) % (Math.PI * 2);
+
+                // Convert radians to degrees
+                const radToDeg = r => (r * 180 / Math.PI).toFixed(1);
+                // console.log(
+                //     `Rotation (deg) - x: ${radToDeg(loadedObject.rotation.x)}, y: ${radToDeg(loadedObject.rotation.y)}, z: ${radToDeg(loadedObject.rotation.z)}`
+                // );
+            }
+        }
+        animate();
+
+        document.getElementById('submitRotationBtn').addEventListener('click', function() {
+            if (!loadedObject) {
+                alert('Object not loaded yet!');
+                return;
+            }
+            // Clamp rotation between 0 and 2*PI
+            loadedObject.rotation.x = (loadedObject.rotation.x + Math.PI * 2) % (Math.PI * 2);
+            loadedObject.rotation.y = (loadedObject.rotation.y + Math.PI * 2) % (Math.PI * 2);
+            loadedObject.rotation.z = (loadedObject.rotation.z + Math.PI * 2) % (Math.PI * 2);
+
+            // Convert radians to degrees
+            const radToDeg = r => (r * 180 / Math.PI).toFixed(1);
+            const rotationData = {
+                x: parseFloat(radToDeg(loadedObject.rotation.x)),
+                y: parseFloat(radToDeg(loadedObject.rotation.y)),
+                z: parseFloat(radToDeg(loadedObject.rotation.z))
+            };
+
+            // Send to server (replace '/api/submit-rotation' with your endpoint)
+            fetch('/api/submit-rotation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(rotationData)
+            })
+            .then(res => res.ok ? alert('Rotation submitted!') : alert('Failed to submit.'))
+            .catch(() => alert('Error submitting rotation.'));
+        });
+
+        // Show the reference image in the left panel
+        document.getElementById('referenceImage').src = 'R.jpg';
+        document.getElementById('referenceImage').style.display = 'block';
+
+        // Screenshot functionality
+        document.getElementById('screenshotBtn').addEventListener('click', function() {
+            // Render one frame to ensure up-to-date image
+            renderer.render(scene, camera);
+            // Get image data URL
+            const imgData = renderer.domElement.toDataURL('image/png');
+            // Create a link and trigger download
+            const link = document.createElement('a');
+            link.href = imgData;
+            link.download = 'screenshot.png';
+            link.click();
+        });
+    </script>
+</body>
+</html>
