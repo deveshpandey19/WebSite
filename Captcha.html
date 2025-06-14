@@ -39,21 +39,25 @@
         }
         #submitRotationBtn {
             position: absolute;
-            left: 50%;
+            right: 30px;
             bottom: 30px;
-            transform: translateX(-50%);
             z-index: 10;
             padding: 10px 18px;
             font-size: 16px;
+            /* Remove left/center positioning */
+            left: auto;
+            transform: none;
         }
         #screenshotBtn {
             position: absolute;
-            left: 50%;
+            right: 30px;
             bottom: 80px;
-            transform: translateX(-50%);
             z-index: 10;
             padding: 10px 18px;
             font-size: 16px;
+            /* Remove left/center positioning */
+            left: auto;
+            transform: none;
         }
         #container {
             width: 100%;
@@ -73,6 +77,122 @@
             <div id="container"></div>
             <button id="submitRotationBtn">Submit Rotation</button>
             <button id="screenshotBtn">Take Screenshot</button>
+            <!-- Replace the last 3 buttons with these 6 buttons for +/- rotation on X, Y, Z axes -->
+            <button id="rotateXPosBtn"
+                style="
+                    position: absolute;
+                    top: 20px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    z-index: 10;
+                    width: 48px;
+                    height: 48px;
+                    background: #fff url('images/up.png') no-repeat center center;
+                    background-size: contain;
+                    border: none;
+                    outline: none;
+                    cursor: pointer;
+                    padding: 0;
+                "
+                title="Rotate +X"
+            ></button>
+            <!-- Replace the Rotate -X button with an icon button at the bottom center -->
+            <button id="rotateXNegBtn"
+                style="
+                    position: absolute;
+                    bottom: 30px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    z-index: 10;
+                    width: 48px;
+                    height: 48px;
+                    background: #fff url('images/down.png') no-repeat center center;
+                    background-size: contain;
+                    border: none;
+                    outline: none;
+                    cursor: pointer;
+                    padding: 0;
+                "
+                title="Rotate -X"
+            ></button>
+            <!-- Replace the Rotate +Y button with an icon button at the right center -->
+            <button id="rotateYPosBtn"
+                style="
+                    position: absolute;
+                    top: 50%;
+                    right: 20px;
+                    transform: translateY(-50%);
+                    z-index: 10;
+                    width: 48px;
+                    height: 48px;
+                    background: #fff url('images/right.png') no-repeat center center;
+                    background-size: contain;
+                    border: none;
+                    outline: none;
+                    cursor: pointer;
+                    padding: 0;
+                "
+                title="Rotate +Y"
+            ></button>
+            <!-- Replace the Rotate -Y button with an icon button at the left center -->
+            <button id="rotateYNegBtn"
+                style="
+                    position: absolute;
+                    top: 50%;
+                    left: 20px;
+                    transform: translateY(-50%);
+                    z-index: 10;
+                    width: 48px;
+                    height: 48px;
+                    background: #fff url('images/left.png') no-repeat center center;
+                    background-size: contain;
+                    border: none;
+                    outline: none;
+                    cursor: pointer;
+                    padding: 0;
+                "
+                title="Rotate -Y"
+            ></button>
+
+            <!-- Rotate -Z button: before RotateXNegBtn (bottom center, left side) -->
+            <button id="rotateZNegBtn"
+                style="
+                    position: absolute;
+                    bottom: 30px;
+                    left: calc(50% - 60px);
+                    transform: translateX(-50%);
+                    z-index: 10;
+                    width: 48px;
+                    height: 48px;
+                    background: #fff url('images/rotateL.png') no-repeat center center;
+                    background-size: contain;
+                    border: none;
+                    outline: none;
+                    cursor: pointer;
+                    padding: 0;
+                "
+                title="Rotate -Z"
+            ></button>
+
+            <!-- Rotate +Z button: next to RotateXNegBtn (bottom center, right side) -->
+            <button id="rotateZPosBtn"
+                style="
+                    position: absolute;
+                    bottom: 30px;
+                    left: calc(50% + 60px);
+                    transform: translateX(-50%);
+                    z-index: 10;
+                    width: 48px;
+                    height: 48px;
+                    background: #fff url('images/rotateR.png') no-repeat center center;
+                    background-size: contain;
+                    border: none;
+                    outline: none;
+                    cursor: pointer;
+                    padding: 0;
+                "
+                title="Rotate +Z"
+            ></button>
         </div>
     </div>
     <!-- Three.js and addons -->
@@ -287,27 +407,46 @@ f 17//7 18//7 13//7
         scene.add(object);
         loadedObject = object;
 */
-        
-        const mtlLoader = new THREE.MTLLoader();
-        mtlLoader.load('obj/Only_Spider_with_Animations_Export.mtl', function(materials) {
-            materials.preload();
-            const objLoader = new THREE.OBJLoader();
-            objLoader.setMaterials(materials);
-            objLoader.load(
-                'obj/Only_Spider_with_Animations_Export.obj',
-                function(object) {
-                    object.position.set(0, 0, 0);
-                    object.scale.set(.1, .1, .1);
-                    scene.add(object);
-                    loadedObject = object;
-                },
-                undefined,
-                function(error) {
-                    alert('An error occurred loading the .obj file.');
-                    console.error(error);
-                }
-            );
-        });
+        // Utility to get query parameter by name
+function getQueryParam(name) {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get(name);
+}
+
+// Get file name from query (e.g., ?file=Butterfly/butterfly)
+let fileBase = getQueryParam('file') || 'musa'; // default if not provided
+let objFile = fileBase.endsWith('.obj') ? fileBase : fileBase + '.obj';
+let mtlFile = fileBase.endsWith('.mtl') ? fileBase.replace('.obj', '.mtl') : fileBase + '.mtl';
+objFile = 'obj/' + fileBase + '/' + objFile;
+mtlFile = 'obj/' + fileBase + '/' + mtlFile;
+console.log('Loading OBJ:', objFile);
+console.log('Loading MTL:', mtlFile);
+const mtlLoader = new THREE.MTLLoader();
+mtlLoader.load(mtlFile, function(materials) {
+    materials.preload();
+    const objLoader = new THREE.OBJLoader();
+    objLoader.setMaterials(materials);
+    objLoader.load(
+        objFile,
+        function(object) {
+            object.position.set(0, 0, 0);
+            object.scale.set(.1, .1, .1);
+
+            // Initialize with a random rotation
+            object.rotation.x = Math.random() * Math.PI * 2;
+            object.rotation.y = Math.random() * Math.PI * 2;
+            object.rotation.z = Math.random() * Math.PI * 2;
+
+            scene.add(object);
+            loadedObject = object;
+        },
+        undefined,
+        function(error) {
+            alert('An error occurred loading the .obj file.');
+            console.error(error);
+        }
+    );
+});
         
         // Mouse drag rotation
         let isDragging = false;
@@ -400,7 +539,7 @@ f 17//7 18//7 13//7
                 y: parseFloat(radToDeg(loadedObject.rotation.y)),
                 z: parseFloat(radToDeg(loadedObject.rotation.z))
             };
-
+            console.log('Submitting rotation:', rotationData);
             // Send to server (replace '/api/submit-rotation' with your endpoint)
             fetch('/api/submit-rotation', {
                 method: 'POST',
@@ -412,7 +551,7 @@ f 17//7 18//7 13//7
         });
 
         // Show the reference image in the left panel
-        document.getElementById('referenceImage').src = 'R.jpg';
+        document.getElementById('referenceImage').src = 'images/ref1.png';
         document.getElementById('referenceImage').style.display = 'block';
 
         // Screenshot functionality
@@ -427,6 +566,57 @@ f 17//7 18//7 13//7
             link.download = 'screenshot.png';
             link.click();
         });
+
+        // --- Hold-to-rotate functionality for rotation buttons ---
+        // Set this variable to true for world space, false for local space rotation
+        let rotateInWorldSpace = true;
+
+        function addHoldRotate(btnId, axis, direction) {
+            let intervalId = null;
+            const step = Math.PI / 180; // 1 degree per step
+            const rotate = () => {
+                if (loadedObject) {
+                    if (rotateInWorldSpace) {
+                        // World space rotation
+                        let worldAxis = new THREE.Vector3(
+                            axis === 'x' ? 1 : 0,
+                            axis === 'y' ? 1 : 0,
+                            axis === 'z' ? 1 : 0
+                        );
+                        const quaternion = new THREE.Quaternion();
+                        quaternion.setFromAxisAngle(worldAxis, direction * step);
+                        loadedObject.applyQuaternion(quaternion);
+                    } else {
+                        // Local space rotation
+                        loadedObject.rotation[axis] += direction * step;
+                    }
+                }
+            };
+            const btn = document.getElementById(btnId);
+            btn.addEventListener('mousedown', () => {
+                rotate();
+                intervalId = setInterval(rotate, 30); 
+            });
+            btn.addEventListener('mouseup', () => clearInterval(intervalId));
+            btn.addEventListener('mouseleave', () => clearInterval(intervalId));
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                rotate();
+                intervalId = setInterval(rotate, 16);
+            });
+            btn.addEventListener('touchend', () => clearInterval(intervalId));
+            btn.addEventListener('touchcancel', () => clearInterval(intervalId));
+        }
+
+        // X axis
+        addHoldRotate('rotateXPosBtn', 'x', -1);
+        addHoldRotate('rotateXNegBtn', 'x', 1);
+        // Y axis
+        addHoldRotate('rotateYPosBtn', 'y', 1);
+        addHoldRotate('rotateYNegBtn', 'y', -1);
+        // Z axis
+        addHoldRotate('rotateZPosBtn', 'z', -1);
+        addHoldRotate('rotateZNegBtn', 'z', 1);
     </script>
 </body>
 </html>
